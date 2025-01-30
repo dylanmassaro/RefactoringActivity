@@ -1,97 +1,112 @@
-﻿namespace RefactoringActivity;
+namespace RefactoringActivity;
 
 public class World
 {
-    public Dictionary<string, Location> Locations;
+    // Encapsulate the Locations dictionary, providing read-only access externally
+    public IReadOnlyDictionary<string, Location> Locations { get; private set; }
 
     public World()
     {
-        Locations = new Dictionary<string, Location>();
-        InitializeWorld();
+        var locations = new Dictionary<string, Location>();
+        InitializeWorld(locations);
+        Locations = locations;
     }
 
-    private void InitializeWorld()
+    private void InitializeWorld(Dictionary<string, Location> locations)
     {
-        Location start = new("Start", "You are at the starting point of your adventure.");
-        Location forest = new("Forest", "You are in a dense, dark forest.");
-        Location cave = new("Cave", "You see a dark, ominous cave.");
+        var start = new Location("Start", "You are at the starting point of your adventure.");
+        var forest = new Location("Forest", "You are in a dense, dark forest.");
+        var cave = new Location("Cave", "You see a dark, ominous cave.");
 
-        start.Exits.Add("north", "Forest");
-        forest.Exits.Add("south", "Start");
-        forest.Exits.Add("east", "Cave");
-        cave.Exits.Add("west", "Forest");
+        start.AddExit("north", "Forest");
+        forest.AddExit("south", "Start");
+        forest.AddExit("east", "Cave");
+        cave.AddExit("west", "Forest");
 
-        start.Items.Add("map");
-        forest.Items.Add("key");
-        forest.Items.Add("potion");
-        cave.Items.Add("sword");
+        start.AddItem("map");
+        forest.AddItem("key");
+        forest.AddItem("potion");
+        cave.AddItem("sword");
 
-        start.Puzzles.Add(new Puzzle("riddle",
+        start.AddPuzzle(new Puzzle("riddle",
             "What's tall as a house, round as a cup, and all the king's horses can't draw it up?", "well"));
 
-        Locations.Add("Start", start);
-        Locations.Add("Forest", forest);
-        Locations.Add("Cave", cave);
+        locations.Add("Start", start);
+        locations.Add("Forest", forest);
+        locations.Add("Cave", cave);
     }
 
     public bool MovePlayer(Player player, string direction)
     {
-        if (Locations[player.CurrentLocation].Exits.ContainsKey(direction))
+        if (Locations.TryGetValue(player.CurrentLocation, out var currentLocation) && 
+            currentLocation.Exits.TryGetValue(direction, out var newLocationKey))
         {
-            player.CurrentLocation = Locations[player.CurrentLocation].Exits[direction];
+            player.MoveToLocation(newLocationKey);
             return true;
         }
-
         return false;
     }
 
     public string GetLocationDescription(string locationName)
     {
-        if (Locations.ContainsKey(locationName)) 
-            return Locations[locationName].Description;
+        if (Locations.TryGetValue(locationName, out var location))
+            return location.Description;
+
         return "Unknown location.";
     }
 
     public string GetLocationDetails(string locationName)
     {
-        if (!Locations.ContainsKey(locationName)) 
+        if (!Locations.TryGetValue(locationName, out var location))
             return "Unknown location.";
 
-        Location location = Locations[locationName];
-        string details = location.Description;
-        
-        if (location.Exits.Count > 0)
-        {
-            details += " Exits lead: ";
-            foreach (string exit in location.Exits.Keys)
-                details += exit + ", ";
-            details = details.Substring(0, details.Length - 2);
-        }
+        var details = new StringBuilder(location.Description);
+        AppendExits(details, location);
+        AppendItems(details, location);
+        AppendPuzzles(details, location);
 
-        if (location.Items.Count > 0)
-        {
-            details += "\nYou see the following items:";
-            foreach (string item in location.Items) 
-                details += $"\n- {item}";
-        }
+        return details.ToString();
+    }
 
-        if (location.Puzzles.Count > 0)
+    private void AppendExits(StringBuilder details, Location location)
+    {
+        if (location.Exits.Any())
         {
-            details += "\nYou see the following puzzles:";
-            foreach (Puzzle puzzle in location.Puzzles) 
-                details += $"\n- {puzzle.Name}";
+            details.Append(" Exits lead: ");
+            details.Append(string.Join(", ", location.Exits.Keys));
         }
+    }
 
-        return details;
+    private void AppendItems(StringBuilder details, Location location)
+    {
+        if (location.Items.Any())
+        {
+            details.AppendLine("\nYou see the following items:");
+            foreach (var item in location.Items)
+            {
+                details.AppendLine($"- {item}");
+            }
+        }
+    }
+
+    private void AppendPuzzles(StringBuilder details, Location location)
+    {
+        if (location.Puzzles.Any())
+        {
+            details.AppendLine("\nYou see the following puzzles:");
+            foreach (var puzzle in location.Puzzles)
+            {
+                details.AppendLine($"- {puzzle.Name}");
+            }
+        }
     }
 
     public bool TakeItem(Player player, string itemName)
     {
-        Location location = Locations[player.CurrentLocation];
-        if (location.Items.Contains(itemName))
+        if (Locations.TryGetValue(player.CurrentLocation, out var location) && 
+            location.Items.Remove(itemName))
         {
-            location.Items.Remove(itemName);
-            player.Inventory.Add(itemName);
+            player.AddItemToInventory(itemName);
             Console.WriteLine($"You take the {itemName}.");
             return true;
         }
@@ -103,15 +118,11 @@ public class World
     {
         if (player.Inventory.Contains(itemName))
         {
+            Console.WriteLine(itemName == "potion" ? "Ouch! That tasted like poison!" : $"The {itemName} disappears in a puff of smoke!");
             if (itemName == "potion")
             {
-                Console.WriteLine("Ouch! That tasted like poison!");
-                player.Health -= 10;
+                player.UpdateHealth(-10);
                 Console.WriteLine($"Your health is now {player.Health}.");
-            }
-            else
-            {
-                Console.WriteLine($"The {itemName} disappears in a puff of smoke!");
             }
             player.Inventory.Remove(itemName);
             return true;
@@ -122,15 +133,15 @@ public class World
 
     public bool SolvePuzzle(Player player, string puzzleName)
     {
-        Location location = Locations[player.CurrentLocation];
-        Puzzle? puzzle = location.Puzzles.Find(p => p.Name == puzzleName);
-
-        if (puzzle != null && puzzle.Solve())
+        if (Locations.TryGetValue(player.CurrentLocation, out var location))
         {
-            location.Puzzles.Remove(puzzle);
-            return true;
+            var puzzle = location.Puzzles.FirstOrDefault(p => p.Name == puzzleName);
+            if (puzzle != null && puzzle.Solve())
+            {
+                location.Puzzles.Remove(puzzle);
+                return true;
+            }
         }
-
         return false;
     }
 }
