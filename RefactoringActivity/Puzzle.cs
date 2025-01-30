@@ -1,11 +1,10 @@
 namespace RefactoringActivity;
-
 public class Puzzle
 {
-    public string Name;
-    public string Question;
-    public string Answer;
-    
+    public string Name { get; private set; }
+    public string Question { get; private set; }
+    public string Answer { get; private set; }
+
     public Puzzle(string name, string question, string answer)
     {
         Name = name;

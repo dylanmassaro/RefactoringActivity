@@ -2,123 +2,138 @@ namespace RefactoringActivity;
 
 public class GameManager
 {
-    public bool IsRunning;
-    public Player Player;
-    public World World;
+    private bool _isRunning;
+    private Player _player;
+    private World _world;
 
     public void RunGame()
     {
-        IsRunning = true;
-        Player = new Player(100);
-        World = new World();
+        _isRunning = true;
+        _player = new Player(100);
+        _world = new World();
 
         Console.WriteLine("Welcome to the Text Adventure Game!");
         Console.WriteLine("Type 'help' for a list of commands.");
 
-        while (IsRunning)
+        while (_isRunning)
         {
             Console.WriteLine();
-            Console.WriteLine(World.GetLocationDetails(Player.CurrentLocation));
+            Console.WriteLine(_world.GetLocationDetails(_player.CurrentLocation));
             Console.Write("> ");
-            string input = Console.ReadLine()?.ToLower();
-            if (string.IsNullOrEmpty(input)) 
-                return;
+            string? input = Console.ReadLine()?.ToLower();
 
-            if (input == "help")
+            if (string.IsNullOrEmpty(input)) return;
+
+            if (input == "quit")
             {
-                Console.WriteLine("Available commands:");
-                Console.WriteLine("- go [direction]: Move in a direction (north, south, east, west).");
-                Console.WriteLine("- take [item]: Take an item from your current location.");
-                Console.WriteLine("- use [item]: Use an item in your inventory.");
-                Console.WriteLine("- solve [puzzle]: Solve a puzzle in your current location.");
-                Console.WriteLine("- inventory: View the items in your inventory.");
-                Console.WriteLine("- quit: Exit the game.");
-            }
-            else if (input.StartsWith("go"))
-            {
-                string[] parts = input.Split(' ');
-                if (parts.Length > 1)
-                {
-                    string direction = parts[1];
-                    if (World.MovePlayer(Player, direction))
-                    {
-                        Console.WriteLine($"You move {direction}.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("You can't go that way.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Move where? (north, south, east, west)");
-                }
-            }
-            else if (input.StartsWith("take"))
-            {
-                string[] parts = input.Split(' ');
-                if (parts.Length > 1)
-                {
-                    string itemName = parts[1];
-                    if (!World.TakeItem(Player, itemName))
-                    {
-                        Console.WriteLine($"There is no {itemName} here.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Take what?");
-                }
-            }
-            else if (input.StartsWith("use"))
-            {
-                string[] parts = input.Split(' ');
-                if (parts.Length > 1)
-                {
-                    string itemName = parts[1];
-                    if (!World.UseItem(Player, itemName))
-                    {
-                        Console.WriteLine($"You can't use the {itemName} here.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Use what?");
-                }
-            }
-            else if (input == "inventory")
-            {
-                Player.ShowInventory();
-            }
-            else if (input.StartsWith("solve"))
-            {
-                string[] parts = input.Split(' ');
-                if (parts.Length > 1)
-                {
-                    string puzzleName = parts[1];
-                    if (World.SolvePuzzle(Player, puzzleName))
-                    {
-                        Console.WriteLine($"You solved the {puzzleName} puzzle!");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"That's not the right solution for the {puzzleName} puzzle.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Solve what?");
-                }
-            }
-            else if (input == "quit")
-            {
-                IsRunning = false;
+                _isRunning = false;
                 Console.WriteLine("Thanks for playing!");
+                return;
             }
-            else
-            {
+
+            ProcessCommand(input);
+        }
+    }
+
+    private void ProcessCommand(string input)
+    {
+        string[] parts = input.Split(' ');
+        string command = parts[0];
+        string? argument = parts.Length > 1 ? parts[1] : null;
+
+        switch (command)
+        {
+            case "help":
+                ShowHelp();
+                break;
+            case "go":
+                MovePlayer(argument);
+                break;
+            case "take":
+                TakeItem(argument);
+                break;
+            case "use":
+                UseItem(argument);
+                break;
+            case "inventory":
+                _player.ShowInventory();
+                break;
+            case "solve":
+                SolvePuzzle(argument);
+                break;
+            default:
                 Console.WriteLine("Unknown command. Try 'help'.");
-            }
+                break;
+        }
+    }
+
+    private void ShowHelp()
+    {
+        Console.WriteLine("Available commands:");
+        Console.WriteLine("- go [direction]: Move in a direction (north, south, east, west).\n- take [item]: Take an item from your current location.\n- use [item]: Use an item in your inventory.\n- solve [puzzle]: Solve a puzzle in your current location.\n- inventory: View the items in your inventory.\n- quit: Exit the game.");
+    }
+
+    private void MovePlayer(string direction)
+    {
+        if (string.IsNullOrEmpty(direction))
+        {
+            Console.WriteLine("Move where? (north, south, east, west)");
+            return;
+        }
+
+        if (_world.MovePlayer(_player, direction))
+        {
+            Console.WriteLine($"You move {direction}.");
+        }
+        else
+        {
+            Console.WriteLine("You can't go that way.");
+        }
+    }
+
+    private void TakeItem(string itemName)
+    {
+        if (string.IsNullOrEmpty(itemName))
+        {
+            Console.WriteLine("Take what?");
+            return;
+        }
+
+        if (!_world.TakeItem(_player, itemName))
+        {
+            Console.WriteLine($"There is no {itemName} here.");
+        }
+    }
+
+    private void UseItem(string itemName)
+    {
+        if (string.IsNullOrEmpty(itemName))
+        {
+            Console.WriteLine("Use what?");
+            return;
+        }
+
+        if (!_world.UseItem(_player, itemName))
+        {
+            Console.WriteLine($"You can't use the {itemName} here.");
+        }
+    }
+
+    private void SolvePuzzle(string puzzleName)
+    {
+        if (string.IsNullOrEmpty(puzzleName))
+        {
+            Console.WriteLine("Solve what?");
+            return;
+        }
+
+        if (_world.SolvePuzzle(_player, puzzleName))
+        {
+            Console.WriteLine($"You solved the {puzzleName} puzzle!");
+        }
+        else
+        {
+            Console.WriteLine($"That's not the right solution for the {puzzleName} puzzle.");
         }
     }
 }

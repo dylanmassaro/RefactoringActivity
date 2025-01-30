@@ -1,10 +1,9 @@
 namespace RefactoringActivity;
-
 public class Player
 {
-    public int Health;
-    public string CurrentLocation;
-    public List<string> Inventory;
+    public int Health { get; set; }
+    public string CurrentLocation { get; set; }
+    public List<string> Inventory { get; private set; }
 
     public Player(int health)
     {

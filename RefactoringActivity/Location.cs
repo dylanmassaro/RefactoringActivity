@@ -1,13 +1,12 @@
 ﻿namespace RefactoringActivity;
-
 public class Location
 {
-    public string Name;
-    public string Description;
-    public Dictionary<string, string> Exits;
-    public List<string> Items;
-    public List<Puzzle> Puzzles;
-    
+    public string Name { get; private set; }
+    public string Description { get; private set; }
+    public Dictionary<string, string> Exits { get; private set; }
+    public List<string> Items { get; private set; }
+    public List<Puzzle> Puzzles { get; private set; }
+
     public Location(string name, string description)
     {
         Name = name;

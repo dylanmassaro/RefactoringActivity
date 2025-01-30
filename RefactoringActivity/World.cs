@@ -1,8 +1,7 @@
 namespace RefactoringActivity;
-
 public class World
 {
-    public Dictionary<string, Location> Locations;
+    public Dictionary<string, Location> Locations { get; private set; }
 
     public World()
     {
@@ -45,13 +44,6 @@ public class World
         return false;
     }
 
-    public string GetLocationDescription(string locationName)
-    {
-        if (Locations.ContainsKey(locationName)) 
-            return Locations[locationName].Description;
-        return "Unknown location.";
-    }
-
     public string GetLocationDetails(string locationName)
     {
         if (!Locations.ContainsKey(locationName)) 
@@ -59,26 +51,23 @@ public class World
 
         Location location = Locations[locationName];
         string details = location.Description;
-        
+
         if (location.Exits.Count > 0)
         {
-            details += " Exits lead: ";
-            foreach (string exit in location.Exits.Keys)
-                details += exit + ", ";
-            details = details.Substring(0, details.Length - 2);
+            details += " Exits lead: " + string.Join(", ", location.Exits.Keys);
         }
 
         if (location.Items.Count > 0)
         {
             details += "\nYou see the following items:";
-            foreach (string item in location.Items) 
+            foreach (string item in location.Items)
                 details += $"\n- {item}";
         }
 
         if (location.Puzzles.Count > 0)
         {
             details += "\nYou see the following puzzles:";
-            foreach (Puzzle puzzle in location.Puzzles) 
+            foreach (Puzzle puzzle in location.Puzzles)
                 details += $"\n- {puzzle.Name}";
         }
 

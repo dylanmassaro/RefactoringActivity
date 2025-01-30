@@ -31,21 +31,7 @@ public class TextAdventureTests
         Assert.True(player.Inventory.Contains("key"));
     }
 
-    [Fact]
-    public void World_InitializesLocationsCorrectly()
-    {
-        // Arrange
-        var world = new World();
-
-        // Act
-        var startDescription = world.GetLocationDescription("Start");
-        var forestDescription = world.GetLocationDescription("Forest");
-
-        // Assert
-        Assert.Contains("starting point", startDescription);
-        Assert.Contains("dark forest", forestDescription);
-    }
-
+    
     [Fact]
     public void World_CanMovePlayerBetweenLocations()
     {
